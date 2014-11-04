@@ -58,6 +58,7 @@ private:
   void on_menu_normal();
   void on_menu_suspend();
   void on_menu_quiet();
+  bool on_quiet_timeout();
   void on_menu_reading();
 
 #ifdef PLATFORM_OS_OSX
