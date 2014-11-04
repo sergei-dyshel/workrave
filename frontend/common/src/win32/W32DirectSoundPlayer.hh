@@ -23,7 +23,7 @@
 #include "ISoundDriver.hh"
 
 #include <windows.h>
-#include <dxerr8.h>
+#include <DxErr.h>
 #include <dsound.h>
 #include <string>
 
