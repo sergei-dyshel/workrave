@@ -360,6 +360,26 @@ MainGtkMenu::on_menu_normal()
     }
 }
 
+bool
+MainGtkMenu::on_quiet_timeout()
+{
+  Glib::RefPtr<Gtk::Action> act = ui_manager->get_action("/Menu/Mode/Normal");
+  Glib::RefPtr<Gtk::RadioAction> ract = Glib::RefPtr<Gtk::RadioAction>::cast_dynamic(act);
+
+  if (ract)
+    {
+      bool active = ract->get_active();
+      if (!active)
+        {
+	      ract->set_active();
+          IGUI *gui = GUI::get_instance();
+          Menus *menus = gui->get_menus();
+          menus->on_menu_normal();
+        }
+    }
+  return true;
+}
+
 void
 MainGtkMenu::on_menu_suspend()
 {
@@ -394,6 +414,7 @@ MainGtkMenu::on_menu_quiet()
           Menus *menus = gui->get_menus();
 
           menus->on_menu_quiet();
+          Glib::signal_timeout().connect(sigc::mem_fun(*this, &MainGtkMenu::on_quiet_timeout), 30 * 60 * 1000);
         }
     }
 }
