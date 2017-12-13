@@ -166,6 +166,16 @@ MainGtkMenu::create_actions()
                     sigc::mem_fun(*this, &MainGtkMenu::on_menu_network_log));
 #endif
 
+  // Quiet for time period
+  action_group->add(
+      Gtk::Action::create("Quiet15min", _("Quiet for 15 min")),
+      sigc::bind<unsigned>(
+          sigc::mem_fun(*this, &MainGtkMenu::on_menu_quiet_for), 15));
+  action_group->add(
+      Gtk::Action::create("Quiet30min", _("Quiet for 30 min")),
+      sigc::bind<unsigned>(
+          sigc::mem_fun(*this, &MainGtkMenu::on_menu_quiet_for), 30));
+
   // Open
   action_group->add(Gtk::Action::create("Open", Gtk::Stock::OPEN),
                     sigc::mem_fun(*menus, &Menus::on_menu_open_main_window));
@@ -220,6 +230,8 @@ MainGtkMenu::create_ui()
     "  <popup name='Menu'>"
     + open_ui_info +
     "    <separator/>" +
+    "    <menuitem action='Quiet15min'/>"
+    "    <menuitem action='Quiet30min'/>"
     "    <menuitem action='Restbreak'/>"
 #ifdef HAVE_EXERCISES
     "    <menuitem action='Exercises'/>"
@@ -358,6 +370,9 @@ MainGtkMenu::on_menu_normal()
           menus->on_menu_normal();
         }
     }
+
+  if (quiet_timeout_connection.connected())
+    quiet_timeout_connection.disconnect();
 }
 
 bool
@@ -366,18 +381,16 @@ MainGtkMenu::on_quiet_timeout()
   Glib::RefPtr<Gtk::Action> act = ui_manager->get_action("/Menu/Mode/Normal");
   Glib::RefPtr<Gtk::RadioAction> ract = Glib::RefPtr<Gtk::RadioAction>::cast_dynamic(act);
 
-  if (ract)
-    {
-      bool active = ract->get_active();
-      if (!active)
-        {
-	      ract->set_active();
-          IGUI *gui = GUI::get_instance();
-          Menus *menus = gui->get_menus();
-          menus->on_menu_normal();
-        }
+  if (ract) {
+    bool active = ract->get_active();
+    if (!active) {
+      ract->set_active();
+      IGUI *gui = GUI::get_instance();
+      Menus *menus = gui->get_menus();
+      menus->on_menu_normal();
     }
-  return true;
+  }
+  return false;
 }
 
 void
@@ -397,6 +410,9 @@ MainGtkMenu::on_menu_suspend()
           menus->on_menu_suspend();
         }
     }
+
+  if (quiet_timeout_connection.connected())
+    quiet_timeout_connection.disconnect();
 }
 
 void
@@ -414,9 +430,26 @@ MainGtkMenu::on_menu_quiet()
           Menus *menus = gui->get_menus();
 
           menus->on_menu_quiet();
-          Glib::signal_timeout().connect(sigc::mem_fun(*this, &MainGtkMenu::on_quiet_timeout), 30 * 60 * 1000);
         }
     }
+
+  if (quiet_timeout_connection.connected())
+    quiet_timeout_connection.disconnect();
+}
+
+void MainGtkMenu::on_menu_quiet_for(unsigned min)
+{
+  Glib::RefPtr<Gtk::Action> act = ui_manager->get_action("/Menu/Mode/Quiet");
+  Glib::RefPtr<Gtk::RadioAction> ract =
+      Glib::RefPtr<Gtk::RadioAction>::cast_dynamic(act);
+
+  if (!ract->get_active()) {
+    ract->set_active();
+    GUI::get_instance()->get_menus()->on_menu_quiet();
+  }
+
+  quiet_timeout_connection = Glib::signal_timeout().connect(
+      sigc::mem_fun(*this, &MainGtkMenu::on_quiet_timeout), min * 60 * 1000);
 }
 
 void

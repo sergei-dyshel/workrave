@@ -58,6 +58,7 @@ private:
   void on_menu_normal();
   void on_menu_suspend();
   void on_menu_quiet();
+  void on_menu_quiet_for(unsigned min);
   bool on_quiet_timeout();
   void on_menu_reading();
 
@@ -69,6 +70,7 @@ private:
                                                void *data);
 #endif
 
+  sigc::connection quiet_timeout_connection;
 
 protected:
   Glib::RefPtr<Gtk::UIManager> ui_manager;
